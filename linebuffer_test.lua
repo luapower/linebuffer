@@ -1,8 +1,34 @@
-local stream = require'stream'
+
 local linebuffer = require'linebuffer'
 local ffi = require'ffi'
 local clock = require'time'.clock
 local pp = require'pp'
+
+--make a `read(sz) -> buf, sz` that is reading from a string.
+local function memreader(s)
+	local buf, len = ffi.cast('char*', s), #s
+	local i = 0
+	return function(n)
+		assert(n > 0)
+		if i == len then
+			return nil, 'eof'
+		else
+			n = math.min(n, len - i)
+			i = i + n
+			return buf + i - n, n
+		end
+	end
+end
+
+--convert `read(maxsz) -> buf, sz` into `read(buf, maxsz) -> sz`.
+local function readtobuffer(read)
+	return function(ownbuf, maxsz)
+		local buf, sz = read(maxsz)
+		if not buf then return nil, sz end
+		ffi.copy(ownbuf, buf, sz)
+		return sz
+	end
+end
 
 local function linebuffer_fuzz_test()
 	local seed = math.floor(clock() * 10)
@@ -57,8 +83,8 @@ local function linebuffer_fuzz_test()
 			n2, n1, avg, count, max_line_size, pp.format(term)))
 	print(string.format('total %d, max read %d', total_size, max_read_size))
 
-	local read = stream.memreader(s)
-	local read = stream.readtobuffer(read)
+	local read = memreader(s)
+	local read = readtobuffer(read)
 	local lb = linebuffer(read, term, max_line_size)
 
 	local t = {}

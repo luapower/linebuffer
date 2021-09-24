@@ -86,7 +86,7 @@ return function(read, term, sz)
 		if j == i then --buffer empty: refill.
 			local ok, err = more()
 			if not ok then
-				if err == 'eof' then return 0 end
+				if err == 'eof' then return buf, 0 end
 				return nil, err
 			end
 		end
