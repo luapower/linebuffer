@@ -56,7 +56,7 @@ return function(read, term, sz)
 			end
 		end
 		local n, err = read(buf + j, sz - j)
-		if n == 0 then return true end
+		if n == 0 then return nil, 'eof' end
 		if not n then return nil, err end
 		j = j + n
 		return true
@@ -85,7 +85,10 @@ return function(read, term, sz)
 	local function read(maxn)
 		if j == i then --buffer empty: refill.
 			local ok, err = more()
-			if not ok then return nil, err end
+			if not ok then
+				if err == 'eof' then return 0 end
+				return nil, err
+			end
 		end
 		local n = math.min(maxn, j - i)
 		local buf = buf + i
