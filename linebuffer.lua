@@ -56,6 +56,7 @@ return function(read, term, sz)
 			end
 		end
 		local n, err = read(buf + j, sz - j)
+		if n == 0 then return true end
 		if not n then return nil, err end
 		j = j + n
 		return true
